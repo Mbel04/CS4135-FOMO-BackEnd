@@ -1,0 +1,12 @@
+com\fomo\backend\controller\BlockControllerTest.class
+com\fomo\backend\controller\CategoryControllerTest.class
+com\fomo\backend\controller\NotificationControllerTest.class
+com\fomo\backend\controller\AuthControllerTest.class
+com\fomo\backend\controller\UserControllerTest.class
+com\fomo\backend\controller\ConversationControllerTest.class
+com\fomo\backend\controller\PostControllerTest.class
+com\fomo\backend\controller\StoryControllerTest.class
+com\fomo\backend\controller\AdminControllerTest.class
+com\fomo\backend\controller\FriendControllerTest.class
+com\fomo\backend\controller\GroupChatControllerTest.class
+com\fomo\backend\controller\SearchControllerTest.class
