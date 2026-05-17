@@ -70,7 +70,7 @@ class GroupChatControllerTest {
     void createGroupChat_returns201() throws Exception {
         CreateGroupChatRequest request = new CreateGroupChatRequest();
         request.setName("Test Group");
-        request.setMemberIds(List.of(UUID.randomUUID()));
+        request.setMemberIds(List.of(UUID.randomUUID().toString()));
 
         when(groupChatService.createGroupChat(anyString(), any())).thenReturn(buildGroupChat());
 
@@ -85,7 +85,7 @@ class GroupChatControllerTest {
     void createGroupChat_noAuth_returns401() throws Exception {
         CreateGroupChatRequest request = new CreateGroupChatRequest();
         request.setName("Test Group");
-        request.setMemberIds(List.of(UUID.randomUUID()));
+        request.setMemberIds(List.of(UUID.randomUUID().toString()));
 
         mockMvc.perform(post("/api/v1/groupchats")
                         .contentType(MediaType.APPLICATION_JSON)

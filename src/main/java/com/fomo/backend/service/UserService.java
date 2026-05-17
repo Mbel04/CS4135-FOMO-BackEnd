@@ -1,5 +1,6 @@
 package com.fomo.backend.service;
 
+import com.fomo.backend.dto.request.ChangePasswordRequest;
 import com.fomo.backend.dto.request.UpdateProfileRequest;
 import com.fomo.backend.dto.response.PostResponse;
 import com.fomo.backend.dto.response.UserResponse;
@@ -11,6 +12,7 @@ import com.fomo.backend.repository.LikeRepository;
 import com.fomo.backend.repository.SavedPostRepository;
 import com.fomo.backend.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -24,6 +26,7 @@ public class UserService {
     private final UserRepository userRepository;
     private final SavedPostRepository savedPostRepository;
     private final LikeRepository likeRepository;
+    private final PasswordEncoder passwordEncoder;
 
     public User getByEmail(String email) {
         return userRepository.findByEmail(email)
@@ -49,6 +52,20 @@ public class UserService {
         return UserResponse.from(userRepository.save(user));
     }
 
+    @Transactional
+    public void changePassword(String email, ChangePasswordRequest request) {
+        User user = getByEmail(email);
+        if (!passwordEncoder.matches(request.getCurrentPassword(), user.getPassword())) {
+            throw new BadRequestException("Current password is incorrect");
+        }
+        if (passwordEncoder.matches(request.getNewPassword(), user.getPassword())) {
+            throw new BadRequestException("New password must be different from your current password");
+        }
+        user.setPassword(passwordEncoder.encode(request.getNewPassword()));
+        userRepository.save(user);
+    }
+
+    @Transactional(readOnly = true)
     public List<PostResponse> getSavedPosts(String email) {
         User user = getByEmail(email);
         return savedPostRepository.findByUser(user).stream()

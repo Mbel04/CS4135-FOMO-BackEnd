@@ -10,3 +10,4 @@ com\fomo\backend\controller\AdminControllerTest.class
 com\fomo\backend\controller\FriendControllerTest.class
 com\fomo\backend\controller\GroupChatControllerTest.class
 com\fomo\backend\controller\SearchControllerTest.class
+com\fomo\backend\controller\ChangePasswordIntegrationTest.class

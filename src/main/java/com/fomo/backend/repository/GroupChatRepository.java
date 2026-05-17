@@ -12,6 +12,7 @@ import java.util.UUID;
 
 @Repository
 public interface GroupChatRepository extends JpaRepository<GroupChat, UUID> {
-    @Query("SELECT g FROM GroupChat g JOIN g.members m WHERE m = :user")
+    @Query("SELECT DISTINCT g FROM GroupChat g JOIN FETCH g.creator JOIN FETCH g.members "
+            + "WHERE :user MEMBER OF g.members ORDER BY g.createdAt DESC")
     List<GroupChat> findByMember(@Param("user") User user);
 }

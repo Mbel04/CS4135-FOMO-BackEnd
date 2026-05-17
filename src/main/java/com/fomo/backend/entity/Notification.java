@@ -43,6 +43,6 @@ public class Notification {
     private LocalDateTime createdAt = LocalDateTime.now();
 
     public enum NotificationType {
-        LIKE, FRIEND_REQUEST, TAG, MESSAGE, STORY
+        LIKE, FRIEND_REQUEST, TAG, MESSAGE, GROUP_MESSAGE, STORY
     }
 }

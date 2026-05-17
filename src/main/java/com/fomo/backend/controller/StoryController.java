@@ -30,13 +30,13 @@ public class StoryController {
     public ResponseEntity<StoryResponse> createStory(
             @AuthenticationPrincipal UserDetails userDetails,
             @RequestParam(required = false) String content,
-            @RequestPart(required = false) MultipartFile media) {
+            @RequestParam(value = "media", required = false) MultipartFile media) {
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(storyService.createStory(userDetails.getUsername(), content, media));
     }
 
     @GetMapping
-    @Operation(summary = "Get all active stories from friends")
+    @Operation(summary = "Get active stories from you and your friends (24h)")
     public ResponseEntity<List<StoryResponse>> getFriendsStories(@AuthenticationPrincipal UserDetails userDetails) {
         return ResponseEntity.ok(storyService.getFriendsStories(userDetails.getUsername()));
     }

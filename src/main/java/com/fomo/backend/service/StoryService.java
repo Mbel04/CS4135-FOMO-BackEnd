@@ -16,6 +16,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -60,7 +61,11 @@ public class StoryService {
         List<User> friends = friendshipRepository.findAllByUser(user).stream()
                 .map(f -> f.getUser1().getId().equals(user.getId()) ? f.getUser2() : f.getUser1())
                 .collect(Collectors.toList());
-        return storyRepository.findActiveStoriesByFriends(friends, LocalDateTime.now()).stream()
+        // Include current user so their own stories appear (previously only friends were queried).
+        List<User> sources = new ArrayList<>(friends.size() + 1);
+        sources.add(user);
+        sources.addAll(friends);
+        return storyRepository.findActiveStoriesForUsers(sources, LocalDateTime.now()).stream()
                 .map(StoryResponse::from)
                 .collect(Collectors.toList());
     }

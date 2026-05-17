@@ -1,6 +1,7 @@
 package com.fomo.backend.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fomo.backend.dto.request.ChangePasswordRequest;
 import com.fomo.backend.dto.request.UpdateProfileRequest;
 import com.fomo.backend.dto.response.PostResponse;
 import com.fomo.backend.dto.response.UserResponse;
@@ -19,6 +20,7 @@ import java.util.UUID;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -104,6 +106,30 @@ class UserControllerTest {
     @Test
     void getSavedPosts_noAuth_returns401() throws Exception {
         mockMvc.perform(get("/api/v1/users/me/saved-posts"))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    @WithMockUser(username = "test@example.com")
+    void changePassword_authenticated_returns204() throws Exception {
+        ChangePasswordRequest request = new ChangePasswordRequest();
+        request.setCurrentPassword("old-secret");
+        request.setNewPassword("new-secret");
+        doNothing().when(userService).changePassword(anyString(), any(ChangePasswordRequest.class));
+
+        mockMvc.perform(put("/api/v1/users/me/password")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.message").value("Password updated"));
+    }
+
+    @Test
+    void changePassword_noAuth_returns401() throws Exception {
+        mockMvc.perform(put("/api/v1/users/me/password")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"currentPassword\":\"a\",\"newPassword\":\"bbbbbb\"}"))
                 .andExpect(status().isUnauthorized());
     }
 }

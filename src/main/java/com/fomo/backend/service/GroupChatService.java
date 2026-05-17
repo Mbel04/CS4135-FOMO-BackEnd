@@ -31,7 +31,20 @@ public class GroupChatService {
         User creator = userRepository.findByEmail(email)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
-        Set<User> members = new HashSet<>(userRepository.findAllById(request.getMemberIds()));
+        Set<User> members = new HashSet<>();
+        for (String token : request.getMemberIds()) {
+            if (token == null || token.isBlank()) {
+                continue;
+            }
+            User u = resolveMember(token.trim());
+            if (u.getId().equals(creator.getId())) {
+                continue;
+            }
+            members.add(u);
+        }
+        if (members.isEmpty()) {
+            throw new BadRequestException("Add at least one other member (valid user id or username).");
+        }
         members.add(creator);
 
         GroupChat groupChat = GroupChat.builder()
@@ -93,7 +106,7 @@ public class GroupChatService {
         groupChat.getMembers().stream()
                 .filter(m -> !m.getId().equals(sender.getId()))
                 .forEach(m -> notificationService.createNotification(m,
-                        Notification.NotificationType.MESSAGE,
+                        Notification.NotificationType.GROUP_MESSAGE,
                         sender.getUsername() + " sent a message in " + groupChat.getName(),
                         groupChat.getId()));
 
@@ -158,6 +171,17 @@ public class GroupChatService {
                 .anyMatch(m -> m.getId().equals(user.getId()));
         if (!isMember) {
             throw new ForbiddenException("You are not a member of this group chat");
+        }
+    }
+
+    private User resolveMember(String t) {
+        try {
+            UUID id = UUID.fromString(t);
+            return userRepository.findById(id)
+                    .orElseThrow(() -> new BadRequestException("No user with id: " + t));
+        } catch (IllegalArgumentException ex) {
+            return userRepository.findByUsernameIgnoreCase(t)
+                    .orElseThrow(() -> new BadRequestException("No user named \"" + t + "\""));
         }
     }
 }

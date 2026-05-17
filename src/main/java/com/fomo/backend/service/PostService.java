@@ -32,7 +32,7 @@ public class PostService {
 
     @Transactional
     public PostResponse createPost(String email, String content, List<UUID> categoryIds,
-                                   List<UUID> taggedUserIds, MultipartFile media) {
+                                   List<String> taggedUserIds, MultipartFile media) {
         if ((content == null || content.isBlank()) && (media == null || media.isEmpty())) {
             throw new BadRequestException("A post must have text content or a media file");
         }
@@ -45,10 +45,7 @@ public class PostService {
             categories = new HashSet<>(categoryRepository.findAllById(categoryIds));
         }
 
-        Set<User> taggedUsers = new HashSet<>();
-        if (taggedUserIds != null && !taggedUserIds.isEmpty()) {
-            taggedUsers = new HashSet<>(userRepository.findAllById(taggedUserIds));
-        }
+        Set<User> taggedUsers = resolveTaggedUsers(taggedUserIds);
 
         Post.PostBuilder builder = Post.builder()
                 .author(author)
@@ -72,6 +69,31 @@ public class PostService {
         }
 
         return PostResponse.from(post, 0);
+    }
+
+    private Set<User> resolveTaggedUsers(List<String> tokens) {
+        Set<User> out = new HashSet<>();
+        if (tokens == null) {
+            return out;
+        }
+        for (String token : tokens) {
+            if (token == null || token.isBlank()) {
+                continue;
+            }
+            out.add(findUserByUuidOrUsername(token.trim()));
+        }
+        return out;
+    }
+
+    private User findUserByUuidOrUsername(String t) {
+        try {
+            UUID id = UUID.fromString(t);
+            return userRepository.findById(id)
+                    .orElseThrow(() -> new BadRequestException("No user with id: " + t));
+        } catch (IllegalArgumentException ex) {
+            return userRepository.findByUsernameIgnoreCase(t)
+                    .orElseThrow(() -> new BadRequestException("No user named \"" + t + "\""));
+        }
     }
 
     @Transactional(readOnly = true)

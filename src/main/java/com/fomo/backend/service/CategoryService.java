@@ -11,6 +11,7 @@ import com.fomo.backend.repository.LikeRepository;
 import com.fomo.backend.repository.PostRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.UUID;
@@ -38,6 +39,7 @@ public class CategoryService {
         return CategoryResponse.from(categoryRepository.save(category));
     }
 
+    @Transactional(readOnly = true)
     public List<PostResponse> getPostsByCategory(UUID categoryId) {
         Category category = categoryRepository.findById(categoryId)
                 .orElseThrow(() -> new ResourceNotFoundException("Category not found"));

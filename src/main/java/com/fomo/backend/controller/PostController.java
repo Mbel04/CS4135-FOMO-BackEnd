@@ -31,8 +31,8 @@ public class PostController {
             @AuthenticationPrincipal UserDetails userDetails,
             @RequestParam(required = false) String content,
             @RequestParam(required = false) List<UUID> categoryIds,
-            @RequestParam(required = false) List<UUID> taggedUserIds,
-            @RequestPart(required = false) MultipartFile media) {
+            @RequestParam(required = false) List<String> taggedUserIds,
+            @RequestParam(value = "media", required = false) MultipartFile media) {
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(postService.createPost(userDetails.getUsername(), content, categoryIds, taggedUserIds, media));
     }

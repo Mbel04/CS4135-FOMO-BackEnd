@@ -7,6 +7,8 @@ import com.fomo.backend.entity.NotificationSettings;
 import com.fomo.backend.entity.User;
 import com.fomo.backend.exception.ForbiddenException;
 import com.fomo.backend.exception.ResourceNotFoundException;
+import com.fomo.backend.repository.ConversationRepository;
+import com.fomo.backend.repository.GroupChatRepository;
 import com.fomo.backend.repository.NotificationRepository;
 import com.fomo.backend.repository.NotificationSettingsRepository;
 import com.fomo.backend.repository.UserRepository;
@@ -25,6 +27,8 @@ public class NotificationService {
     private final NotificationRepository notificationRepository;
     private final NotificationSettingsRepository settingsRepository;
     private final UserRepository userRepository;
+    private final GroupChatRepository groupChatRepository;
+    private final ConversationRepository conversationRepository;
 
     @Transactional
     public void createNotification(User user, Notification.NotificationType type, String message, UUID referenceId) {
@@ -46,7 +50,7 @@ public class NotificationService {
             case LIKE -> s.isLikes();
             case FRIEND_REQUEST -> s.isFriendRequests();
             case TAG -> s.isTags();
-            case MESSAGE -> s.isMessages();
+            case MESSAGE, GROUP_MESSAGE -> s.isMessages();
             case STORY -> s.isStories();
         };
     }
@@ -56,8 +60,39 @@ public class NotificationService {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));
         return notificationRepository.findByUserOrderByCreatedAtDesc(user).stream()
-                .map(NotificationResponse::from)
+                .map(this::toResponse)
                 .collect(Collectors.toList());
+    }
+
+    private NotificationResponse toResponse(Notification n) {
+        NotificationResponse r = NotificationResponse.from(n);
+        r.setReferenceKind(resolveReferenceKind(n));
+        return r;
+    }
+
+    /**
+     * Tells the client how to interpret {@code referenceId} for navigation (not stored in DB).
+     */
+    private String resolveReferenceKind(Notification n) {
+        UUID ref = n.getReferenceId();
+        if (ref == null) {
+            return "none";
+        }
+        return switch (n.getType()) {
+            case LIKE, TAG -> "post";
+            case FRIEND_REQUEST -> "user";
+            case STORY -> "story";
+            case GROUP_MESSAGE -> "group";
+            case MESSAGE -> {
+                if (groupChatRepository.existsById(ref)) {
+                    yield "group";
+                }
+                if (conversationRepository.existsById(ref)) {
+                    yield "conversation";
+                }
+                yield "conversation";
+            }
+        };
     }
 
     @Transactional

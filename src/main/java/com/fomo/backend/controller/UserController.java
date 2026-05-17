@@ -1,6 +1,8 @@
 package com.fomo.backend.controller;
 
+import com.fomo.backend.dto.request.ChangePasswordRequest;
 import com.fomo.backend.dto.request.UpdateProfileRequest;
+import com.fomo.backend.dto.response.ApiResponse;
 import com.fomo.backend.dto.response.PostResponse;
 import com.fomo.backend.dto.response.UserResponse;
 import com.fomo.backend.service.UserService;
@@ -34,6 +36,14 @@ public class UserController {
     public ResponseEntity<UserResponse> updateMe(@AuthenticationPrincipal UserDetails userDetails,
                                                   @Valid @RequestBody UpdateProfileRequest request) {
         return ResponseEntity.ok(userService.updateProfile(userDetails.getUsername(), request));
+    }
+
+    @PutMapping("/me/password")
+    @Operation(summary = "Change current user password")
+    public ResponseEntity<ApiResponse> changePassword(@AuthenticationPrincipal UserDetails userDetails,
+                                                      @Valid @RequestBody ChangePasswordRequest request) {
+        userService.changePassword(userDetails.getUsername(), request);
+        return ResponseEntity.ok(ApiResponse.ok("Password updated"));
     }
 
     @GetMapping("/me/saved-posts")

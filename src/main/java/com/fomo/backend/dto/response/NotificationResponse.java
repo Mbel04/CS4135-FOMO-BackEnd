@@ -13,6 +13,8 @@ public class NotificationResponse {
     private String message;
     private boolean read;
     private UUID referenceId;
+    /** How to route referenceId: post, conversation, group, user, story, none */
+    private String referenceKind;
     private LocalDateTime createdAt;
 
     public static NotificationResponse from(Notification notification) {

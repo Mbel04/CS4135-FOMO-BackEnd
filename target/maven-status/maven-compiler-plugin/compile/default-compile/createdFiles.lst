@@ -4,6 +4,7 @@ com\fomo\backend\repository\FriendshipRepository.class
 com\fomo\backend\entity\Notification$NotificationBuilder.class
 com\fomo\backend\dto\request\CreateReportRequest.class
 com\fomo\backend\config\SecurityConfig.class
+com\fomo\backend\dto\request\ChangePasswordRequest.class
 com\fomo\backend\service\PostService.class
 com\fomo\backend\service\StoryService.class
 com\fomo\backend\controller\CategoryController.class
@@ -12,6 +13,7 @@ com\fomo\backend\entity\GroupMessage.class
 com\fomo\backend\entity\FriendRequest$FriendRequestBuilder.class
 com\fomo\backend\dto\response\MessageResponse.class
 com\fomo\backend\dto\request\CreateStoryRequest.class
+com\fomo\backend\config\CorsConfig.class
 com\fomo\backend\service\SearchService.class
 com\fomo\backend\exception\BadRequestException.class
 com\fomo\backend\controller\BlockController.class
@@ -95,6 +97,7 @@ com\fomo\backend\entity\Story.class
 com\fomo\backend\repository\GroupMessageRepository.class
 com\fomo\backend\entity\Category$CategoryBuilder.class
 com\fomo\backend\dto\request\SendGroupMessageRequest.class
+com\fomo\backend\controller\LocalMediaController.class
 com\fomo\backend\entity\Notification$NotificationType.class
 com\fomo\backend\FomoBackendApplication.class
 com\fomo\backend\service\NotificationService$1.class

@@ -1,9 +1,11 @@
 package com.fomo.backend.service;
 
 import com.fomo.backend.config.SupabaseStorageProperties;
+import com.fomo.backend.exception.BadRequestException;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -11,6 +13,9 @@ import java.io.*;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.UUID;
 
 @Slf4j
@@ -20,8 +25,28 @@ public class SupabaseStorageService {
 
     private final SupabaseStorageProperties props;
 
+    @Value("${fomo.local-media-dir:local-uploads}")
+    private String localMediaDir;
+
+    private Path localMediaRoot;
+
+    private boolean isConfigured() {
+        return props.getUrl() != null && !props.getUrl().isBlank()
+                && props.getServiceRoleKey() != null && !props.getServiceRoleKey().isBlank();
+    }
+
     @PostConstruct
     public void init() {
+        if (!isConfigured()) {
+            localMediaRoot = Paths.get(localMediaDir).toAbsolutePath().normalize();
+            try {
+                Files.createDirectories(localMediaRoot);
+            } catch (IOException e) {
+                throw new UncheckedIOException("Cannot create local media directory: " + localMediaRoot, e);
+            }
+            log.warn("Supabase not configured; media files are stored under {} (local dev).", localMediaRoot);
+            return;
+        }
         String key = props.getServiceRoleKey().trim();
         log.info("Supabase key length={}, starts={}, ends={}",
                 key.length(), key.substring(0, Math.min(20, key.length())),
@@ -80,6 +105,22 @@ public class SupabaseStorageService {
     public String uploadFile(String bucket, String folder, MultipartFile file) {
         String extension = getExtension(file.getOriginalFilename());
         String storagePath = folder + "/" + UUID.randomUUID() + extension;
+
+        if (!isConfigured()) {
+            try {
+                Path dir = localMediaRoot.resolve(bucket).resolve(folder);
+                Files.createDirectories(dir);
+                String fileName = storagePath.substring(storagePath.lastIndexOf('/') + 1);
+                Path target = dir.resolve(fileName);
+                Files.write(target, file.getBytes());
+                log.info("Saved upload locally: {}", target);
+                return storagePath;
+            } catch (IOException e) {
+                log.error("Local media save failed: {}", e.getMessage());
+                throw new BadRequestException("Could not save media file locally. Check disk permissions or path.");
+            }
+        }
+
         String key = props.getServiceRoleKey().trim();
         String contentType = file.getContentType() != null ? file.getContentType() : "application/octet-stream";
 
@@ -98,15 +139,31 @@ public class SupabaseStorageService {
             } else {
                 String response = readResponse(conn, status);
                 log.error("Supabase Storage upload failed ({}) for {}: {}", status, storagePath, response);
-                throw new RuntimeException("Storage upload failed (" + status + "): " + response);
+                throw new BadRequestException(
+                        "Media upload failed (" + status + "). " + truncateForClient(response));
             }
         } catch (IOException e) {
-            throw new RuntimeException("Failed to read uploaded file", e);
+            log.error("Upload IO error: {}", e.getMessage());
+            throw new BadRequestException("Could not read or send the uploaded file.");
         }
     }
 
     public void deleteFile(String bucket, String storagePath) {
         if (storagePath == null || storagePath.isBlank()) return;
+
+        if (!isConfigured()) {
+            try {
+                Path base = localMediaRoot.resolve(bucket).normalize();
+                Path file = base.resolve(storagePath).normalize();
+                if (file.startsWith(base)) {
+                    Files.deleteIfExists(file);
+                }
+            } catch (IOException e) {
+                log.warn("Failed to delete local file {}/{}: {}", bucket, storagePath, e.getMessage());
+            }
+            return;
+        }
+
         String key = props.getServiceRoleKey().trim();
 
         try {
@@ -127,6 +184,9 @@ public class SupabaseStorageService {
 
     public String getPublicUrl(String bucket, String storagePath) {
         if (storagePath == null || storagePath.isBlank()) return null;
+        if (!isConfigured()) {
+            return "/api/v1/local-media/" + bucket + "/" + storagePath;
+        }
         return props.getUrl() + "/storage/v1/object/public/" + bucket + "/" + storagePath;
     }
 
@@ -173,5 +233,11 @@ public class SupabaseStorageService {
     private String getExtension(String filename) {
         if (filename == null || !filename.contains(".")) return "";
         return filename.substring(filename.lastIndexOf('.'));
+    }
+
+    private static String truncateForClient(String response) {
+        if (response == null || response.isBlank()) return "Check storage configuration and bucket permissions.";
+        String t = response.replace('\n', ' ').trim();
+        return t.length() > 200 ? t.substring(0, 200) + "…" : t;
     }
 }
