@@ -1,8 +1,7 @@
-FROM eclipse-temurin:17-jdk AS build
+FROM maven:3.9-eclipse-temurin-17 AS build
 WORKDIR /app
 COPY pom.xml .
-COPY .mvn .mvn
-RUN apt-get update && apt-get install -y maven && mvn dependency:go-offline -q
+RUN mvn dependency:go-offline -q
 COPY src src
 RUN mvn clean package -DskipTests -q
 
